@@ -1,0 +1,9 @@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+
+Name: libndn-cpp-et
+Description: NDN External Library API
+Version: @VERSION@
+Libs: -L${libdir} -lndn-cpp-et
+Cflags: -I${includedir}
