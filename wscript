@@ -41,7 +41,7 @@ def configure(conf):
         conf.check_cfg(package='liblog4cxx', args=['--cflags', '--libs'], uselib_store='LOG4CXX', mandatory=True)
         conf.define ("HAVE_LOG4CXX", 1)
 
-    conf.check_boost(lib='system test regex')
+    conf.check_boost(lib='system test regex thread')
 
     boost_version = conf.env.BOOST_VERSION.split('_')
     if int(boost_version[0]) < 1 or int(boost_version[1]) < 46:
@@ -63,7 +63,7 @@ def build (bld):
         source = bld.path.ant_glob(['ndn-cpp-et/**/*.cpp',
                                     'logging.cc',
                                     'libndn-cpp-et.pc.in']),
-        use = 'BOOST BOOST_REGEX NDNCPP LOG4CXX',
+        use = 'BOOST BOOST_REGEX BOOST_THREAD NDNCPP LOG4CXX',
         includes = ".",
         )
 
