@@ -9,10 +9,10 @@ def options(opt):
     opt.add_option('--log4cxx', action='store_true',default=False,dest='log4cxx',help='''Compile with log4cxx logging support''')
 
     opt.load('compiler_c compiler_cxx gnu_dirs boost doxygen')
-    opt.load('ndn_cpp', tooldir=['waf-tools'])
+    opt.load('ndn_cpp cryptopp', tooldir=['waf-tools'])
 
 def configure(conf):
-    conf.load("compiler_c compiler_cxx boost ndn_cpp gnu_dirs")
+    conf.load("compiler_c compiler_cxx boost ndn_cpp gnu_dirs cryptopp")
     try:
         conf.load("doxygen")
     except:
@@ -41,6 +41,8 @@ def configure(conf):
         conf.check_cfg(package='liblog4cxx', args=['--cflags', '--libs'], uselib_store='LOG4CXX', mandatory=True)
         conf.define ("HAVE_LOG4CXX", 1)
 
+    conf.check_cryptopp(path=conf.options.cryptopp_dir)
+
     conf.check_boost(lib='system test regex thread')
 
     boost_version = conf.env.BOOST_VERSION.split('_')
@@ -58,7 +60,7 @@ def build (bld):
 
     libndn_cpp_et = bld (
         target="ndn-cpp-et",
-        vnum = "0.0.1",
+        # vnum = "0.0.1",
         features=['cxx', 'cxxshlib'],
         source = bld.path.ant_glob(['ndn-cpp-et/**/*.cpp',
                                     'logging.cc',
@@ -74,7 +76,7 @@ def build (bld):
           features = "cxx cxxprogram",
           defines = "WAF",
           source = bld.path.ant_glob(['test/*.cpp']),
-          use = 'BOOST_TEST BOOST_REGEX LOG4CXX ndn-cpp-et',
+          use = 'BOOST_TEST BOOST_REGEX LOG4CXX ndn-cpp-et CRYPTOPP',
           includes = ".",
           install_prefix = None,
           )
