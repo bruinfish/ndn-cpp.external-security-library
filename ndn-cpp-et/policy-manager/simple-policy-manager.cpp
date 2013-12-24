@@ -9,7 +9,7 @@
 
 #include <ndn-cpp/security/security-exception.hpp>
 #include <ndn-cpp/sha256-with-rsa-signature.hpp>
-#include <ndn-cpp/security/signature/sha256-rsa-handler.hpp>
+#include <ndn-cpp/security/signature/sha256-with-rsa-handler.hpp>
 #include "ndn-cpp-et/cache/ttl-certificate-cache.hpp"
 
 #include <boost/bind.hpp>
@@ -78,7 +78,7 @@ namespace ndn
       {
         m_certificateCache->insertCertificate(certificate);
 
-        if(Sha256RsaHandler::verify(*data, certificate->getPublicKeyInfo()))
+        if(Sha256WithRsaHandler::verifySignature(*data, certificate->getPublicKeyInfo()))
           {
             onVerified(data);
             return;
@@ -140,7 +140,7 @@ namespace ndn
               trustedCert = m_trustAnchors[keyLocatorName.toUri()];
 
             if(SPM_NULL_IDENTITY_CERTIFICATE_PTR != trustedCert){
-              if(Sha256RsaHandler::verify(*data, trustedCert->getPublicKeyInfo()))
+              if(Sha256WithRsaHandler::verifySignature(*data, trustedCert->getPublicKeyInfo()))
 		onVerified(data);
               else
 		onVerifyFailed(data);
