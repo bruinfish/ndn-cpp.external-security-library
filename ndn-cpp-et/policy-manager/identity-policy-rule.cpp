@@ -7,9 +7,8 @@
 
 #include "identity-policy-rule.hpp"
 
-#include <ndn-cpp/sha256-with-rsa-signature.hpp>
+#include <ndn-cpp/security/signature/signature-sha256-with-rsa.hpp>
 #include <ndn-cpp/security/security-common.hpp>
-#include <ndn-cpp/security/security-exception.hpp>
 
 
 
@@ -34,7 +33,7 @@ namespace ndn
       m_signerNameRegex(signerRegex, signerExpand)
   {
     if(op != ">" && op != ">=" && op != "==")
-      throw SecurityException("op is wrong!");
+      throw Error("op is wrong!");
   }
 
   IdentityPolicyRule::~IdentityPolicyRule()
@@ -49,8 +48,8 @@ namespace ndn
     KeyType keyType = KEY_TYPE_RSA; //For temporary, should be assigned by Publickey.getKeyType();
     if(KEY_TYPE_RSA == keyType && DIGEST_ALGORITHM_SHA256 == digestAlg)
       {
-	const Sha256WithRsaSignature* sigPtr = dynamic_cast<const Sha256WithRsaSignature*> (data.getSignature());
-	Name signerName = sigPtr->getKeyLocator().getKeyName();
+	SignatureSha256WithRsa sig(data.getSignature());
+	const Name &signerName = sig.getKeyLocator().getName();
         
         return satisfy (dataName, signerName);
       }
@@ -92,8 +91,8 @@ namespace ndn
     KeyType keyType = KEY_TYPE_RSA; //For temporary, should be assigned by Publickey.getKeyType();
     if(KEY_TYPE_RSA == keyType && DIGEST_ALGORITHM_SHA256 == digestAlg)
       {
-        const Sha256WithRsaSignature* sigPtr = dynamic_cast<const Sha256WithRsaSignature*> (data.getSignature());
-        Name signerName = sigPtr->getKeyLocator().getKeyName();
+        SignatureSha256WithRsa sig(data.getSignature());
+        const Name &signerName = sig.getKeyLocator().getName();
         return m_signerNameRegex.match(signerName);
       }
     

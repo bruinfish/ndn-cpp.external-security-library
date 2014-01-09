@@ -9,12 +9,12 @@
 #define NDN_SIMPLE_POLICY_MANAGER_H
 
 #include <ndn-cpp/security/policy/policy-manager.hpp>
+#include <ndn-cpp/security/certificate/identity-certificate.hpp>
 
 #include <map>
 #include "identity-policy-rule.hpp"
 #include "ndn-cpp-et/regex/regex.hpp"
 #include "ndn-cpp-et/cache/certificate-cache.hpp"
-#include <ndn-cpp/security/certificate/identity-certificate.hpp>
 
 
 namespace ndn {
@@ -26,6 +26,8 @@ namespace ndn {
   class SimplePolicyManager : public PolicyManager
   {
   public:
+    struct Error : public PolicyManager::Error { Error(const std::string &what) : PolicyManager::Error(what) {} };
+
     typedef std::vector< ptr_lib::shared_ptr<IdentityPolicyRule> > RuleList;
     typedef std::vector< ptr_lib::shared_ptr<Regex> > RegexList;
 

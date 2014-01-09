@@ -9,10 +9,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ndn-cpp/face.hpp>
-#include <ndn-cpp/security/identity/basic-identity-storage.hpp>
-#include <ndn-cpp/security/identity/osx-private-key-storage.hpp>
-#include <ndn-cpp/security/identity/identity-manager.hpp>
 #include <ndn-cpp/security/key-chain.hpp>
+#include <ndn-cpp/security/verifier.hpp>
 
 #include "ndn-cpp-et/policy-manager/simple-policy-manager.hpp"
 
@@ -28,23 +26,23 @@ BOOST_AUTO_TEST_SUITE(PolicyManagerTests)
 void
 onVerified(const ptr_lib::shared_ptr<Data>& data)
 {
-  string content((const char*)data->getContent().buf(), data->getContent().size());
+  string content((const char*)data->getContent().value(), data->getContent().value_size());
   cout << "Verified Content: " << content << endl;
 }
 
 void
 onVerifyFailed(const ptr_lib::shared_ptr<Data>& data)
 {
-  string content((const char*)data->getContent().buf(), data->getContent().size());
+  string content(reinterpret_cast<const char*>(data->getContent().value()), data->getContent().value_size());
   cout << "Cannot Verify Content: " << content << endl;
 }
 
 void 
 onData(const ptr_lib::shared_ptr<const Interest>& interest, 
        const ptr_lib::shared_ptr<Data>& data,
-       ptr_lib::shared_ptr<KeyChain> keyChain)
+       ptr_lib::shared_ptr<Verifier> verifier)
 {
-  keyChain->verifyData(data, bind(&onVerified, _1), bind(&onVerifyFailed, _1));
+  verifier->verifyData(data, bind(&onVerified, _1), bind(&onVerifyFailed, _1));
 }
 
 void 
@@ -58,12 +56,11 @@ onInterest(const ptr_lib::shared_ptr<const Name>& prefix,
            const ptr_lib::shared_ptr<const Interest>& interest, 
            Transport& transport, 
            uint64_t registeredPrefixId,
-           const ptr_lib::shared_ptr<const Data>& data)
+           const ptr_lib::shared_ptr<const Data>& data,
+           const ptr_lib::shared_ptr<Face>& face)
 {
   cout << "on Interest!" << endl;
-  Blob encodedData = data->wireEncode();
-  cout << encodedData.size() << endl;
-  transport.send(*encodedData);
+  face->put(*data);
 }
 
 void
@@ -82,7 +79,7 @@ getRoot(const string & TrustAnchor)
                              new CryptoPP::Base64Decoder(new CryptoPP::StringSink(decoded)));
 
   ptr_lib::shared_ptr<Data> data = ptr_lib::make_shared<Data>();
-  data->wireDecode((const uint8_t*)decoded.c_str(), decoded.size());
+  data->wireDecode(Block(decoded.c_str(), decoded.size()));
 
   return ptr_lib::make_shared<IdentityCertificate>(*data);
   // return ptr_lib::make_shared<IdentityCertificate>();
@@ -113,13 +110,12 @@ iVUF1QIBEQAA");
   ptr_lib::shared_ptr<IdentityCertificate> root = getRoot(TrustAnchor);
 
   try {
-    // Connect to port 6363 until the testbed hubs use NDNx.
-    Face face("localhost", 6363);
-    
-    ptr_lib::shared_ptr<BasicIdentityStorage> publicStorage = ptr_lib::make_shared<BasicIdentityStorage>();
-    ptr_lib::shared_ptr<OSXPrivateKeyStorage> privateStorage = ptr_lib::make_shared<OSXPrivateKeyStorage>();
-    ptr_lib::shared_ptr<IdentityManager> identityManager = ptr_lib::make_shared<IdentityManager>(publicStorage, privateStorage);
+    ptr_lib::shared_ptr<Face> face = ptr_lib::make_shared<Face>();
+
+    ptr_lib::shared_ptr<KeyChain> keyChain = ptr_lib::make_shared<KeyChain>();
     ptr_lib::shared_ptr<SimplePolicyManager> policyManager = ptr_lib::make_shared<SimplePolicyManager>();
+    ptr_lib::shared_ptr<Verifier> verifier = ptr_lib::make_shared<Verifier>(policyManager);
+    verifier->setFace(face);
     
     ptr_lib::shared_ptr<IdentityPolicyRule> rule1 = ptr_lib::make_shared<IdentityPolicyRule>("^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>",
                                                                                              "^([^<KEY>]*)<KEY><dsk-.*><ID-CERT>$",
@@ -137,36 +133,29 @@ iVUF1QIBEQAA");
 
     policyManager->addTrustAnchor(root);
 
-    ptr_lib::shared_ptr<KeyChain> keyChain = ptr_lib::make_shared<KeyChain>(identityManager, policyManager);
+    Name name0("/ndn/edu/ucla/cs/yingdi/tmp04");
+    face->expressInterest(name0, boost::bind(onData, _1, _2, verifier), boost::bind(onTimeout, _1));
 
-    keyChain->setFace(&face);
 
-
-    Name name1("/ndn/edu/ucla/cs/yingdi/tmp03");
-    Name certificateName = identityManager->getDefaultCertificateName();
+    Name name("/ndn/edu/ucla/cs/yingdi/tmp05");
+    Name certificateName = keyChain->getDefaultCertificateName();
 
     cout << certificateName.toUri() << endl;
 
-    ptr_lib::shared_ptr<Data> data = ptr_lib::make_shared<Data>(name1);
+    ptr_lib::shared_ptr<Data> data = ptr_lib::make_shared<Data>(name);
     string content("abcd");
     data->setContent((const uint8_t *)&content[0], content.size());
-    data->getMetaInfo().setTimestampMilliseconds(time(NULL) * 1000.0);
     keyChain->sign(*data, certificateName);
 
-    face.registerPrefix(name1, boost::bind(onInterest, _1, _2, _3, _4, data), boost::bind(onRegisterFailed, _1));
+    face->put(*data);
+    face->setInterestFilter(name, boost::bind(onInterest, _1, _2, _3, _4, data, face), boost::bind(onRegisterFailed, _1));
   
     
-    Name name2("/ndn/edu/ucla/cs/yingdi/tmp03");    
-    cout << "Express name " << name2.toUri() << endl;
+    cout << "Express name " << namex << endl;
     // Use bind to pass the counter object to the callbacks.
-    face.expressInterest(name2, boost::bind(onData, _1, _2, keyChain), boost::bind(onTimeout, _1));
+    face->expressInterest(name, boost::bind(onData, _1, _2, verifier), boost::bind(onTimeout, _1));
     
-    // The main event loop.
-    while (true) {
-      face.processEvents();
-      // We need to sleep for a few milliseconds so we don't use 100% of the CPU.
-      usleep(10000);
-    }
+    face->processEvents();
   } catch (std::exception& e) {
     cout << "exception: " << e.what() << endl;
   }

@@ -11,10 +11,15 @@
 
 #include <iostream>
 
+INIT_LOGGER("TTLCertificateCache")
+
+#if NDN_CPP_HAVE_CXX11
+// In the std library, the placeholders are in a different namespace than boost.
+using namespace ndn::func_lib::placeholders;
+#endif
+
 using namespace std;
 using namespace boost;
-
-INIT_LOGGER("TTLCertificateCache")
 
 namespace ndn
 {    
@@ -54,7 +59,7 @@ namespace ndn
   TTLCertificateCache::insertCertificate(ptr_lib::shared_ptr<Certificate> certificate)
   {
     Name name = certificate->getName().getPrefix(certificate->getName().size()-1);
-    Time expire = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::seconds(certificate->getMetaInfo().getFreshnessSeconds());
+    Time expire = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::milliseconds(certificate->getMetaInfo().getFreshnessPeriod());
     
     {
       UniqueRecLock lock(m_mutex);

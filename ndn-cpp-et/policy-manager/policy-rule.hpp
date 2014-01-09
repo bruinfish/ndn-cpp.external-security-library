@@ -16,6 +16,7 @@ namespace ndn
   class PolicyRule
   {
   public:
+    struct Error : public std::runtime_error { Error(const std::string &what) : std::runtime_error(what) {} };
 
     enum PolicyType{
       IDENTITY_POLICY,

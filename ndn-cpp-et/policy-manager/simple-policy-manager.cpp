@@ -7,15 +7,19 @@
 
 #include "simple-policy-manager.hpp"
 
-#include <ndn-cpp/security/security-exception.hpp>
-#include <ndn-cpp/sha256-with-rsa-signature.hpp>
-#include <ndn-cpp/security/signature/sha256-with-rsa-handler.hpp>
+#include <ndn-cpp/security/verifier.hpp>
+#include <ndn-cpp/security/signature/signature-sha256-with-rsa.hpp>
 #include "ndn-cpp-et/cache/ttl-certificate-cache.hpp"
 
 #include <boost/bind.hpp>
 #include <cryptopp/rsa.h>
 
 #include "logging.h"
+
+#if NDN_CPP_HAVE_CXX11
+// In the std library, the placeholders are in a different namespace than boost.
+using namespace ndn::func_lib::placeholders;
+#endif
 
 INIT_LOGGER("SimplePolicyManager");
 
@@ -78,11 +82,17 @@ namespace ndn
       {
         m_certificateCache->insertCertificate(certificate);
 
-        if(Sha256WithRsaHandler::verifySignature(*data, certificate->getPublicKeyInfo()))
-          {
-            onVerified(data);
-            return;
-          }
+        try{
+          if(Verifier::verifySignature(*data, data->getSignature(), certificate->getPublicKeyInfo()))
+            {
+              onVerified(data);
+              return;
+            }
+        }catch(Signature::Error &e){
+          _LOG_DEBUG("SimplePolicyManager Error: " << e.what());
+          onVerifyFailed(data);
+          return;
+        }
       }
     else
       {
@@ -124,54 +134,58 @@ namespace ndn
       {
 	if((*it)->satisfy(*data))
           {
-            const Sha256WithRsaSignature* sigPtr = dynamic_cast<const Sha256WithRsaSignature*> (data->getSignature());    
-
-            if(ndn_KeyLocatorType_KEYNAME != sigPtr->getKeyLocator().getType())
-              {
-                onVerifyFailed(data);
-		return SPM_NULL_VALIDATION_REQUEST_PTR;
-              }
-
-	    const Name& keyLocatorName = sigPtr->getKeyLocator().getKeyName();
-	    ptr_lib::shared_ptr<const Certificate> trustedCert;
-            if(m_trustAnchors.end() == m_trustAnchors.find(keyLocatorName.toUri()))
-              trustedCert = m_certificateCache->getCertificate(keyLocatorName);
-	    else
-              trustedCert = m_trustAnchors[keyLocatorName.toUri()];
-
-            if(SPM_NULL_IDENTITY_CERTIFICATE_PTR != trustedCert){
-              if(Sha256WithRsaHandler::verifySignature(*data, trustedCert->getPublicKeyInfo()))
-		onVerified(data);
+            try{
+              SignatureSha256WithRsa sig(data->getSignature());                
+              
+              Name keyLocatorName = sig.getKeyLocator().getName();
+              ptr_lib::shared_ptr<const Certificate> trustedCert;
+              if(m_trustAnchors.end() == m_trustAnchors.find(keyLocatorName.toUri()))
+                trustedCert = m_certificateCache->getCertificate(keyLocatorName);
               else
-		onVerifyFailed(data);
-	      return SPM_NULL_VALIDATION_REQUEST_PTR;
-            }
-            else{
-              _LOG_DEBUG("KeyLocator is not trust anchor");
+                trustedCert = m_trustAnchors[keyLocatorName.toUri()];
 
-              OnVerified recursiveVerifiedCallback = boost::bind(&SimplePolicyManager::onCertificateVerified, 
-								 this, 
-								 _1, 
-								 data, 
-								 onVerified, 
-								 onVerifyFailed);
+              if(static_cast<bool>(trustedCert)){
+                if(Verifier::verifySignature(*data, sig, trustedCert->getPublicKeyInfo()))
+                  onVerified(data);
+                else
+                  onVerifyFailed(data);
+                onVerifyFailed(data);
 
-              OnVerifyFailed recursiveUnverifiedCallback = boost::bind(&SimplePolicyManager::onCertificateUnverified, 
-								       this, 
-								       _1, 
-								       data, 
-								       onVerifyFailed);
+                return SPM_NULL_VALIDATION_REQUEST_PTR;
+              }
+              else{
+                // _LOG_DEBUG("KeyLocator is not trust anchor");                
+                OnVerified recursiveVerifiedCallback = func_lib::bind(&SimplePolicyManager::onCertificateVerified, 
+                                                                      this, 
+                                                                      _1, 
+                                                                      data, 
+                                                                      onVerified, 
+                                                                      onVerifyFailed);
+
+                OnVerifyFailed recursiveUnverifiedCallback = func_lib::bind(&SimplePolicyManager::onCertificateUnverified, 
+                                                                            this, 
+                                                                            _1, 
+                                                                            data, 
+                                                                            onVerifyFailed);
 
 
-	      ptr_lib::shared_ptr<Interest> interest = ptr_lib::make_shared<Interest>(sigPtr->getKeyLocator().getKeyName());
-              interest->setChildSelector(ndn_Interest_CHILD_SELECTOR_RIGHT);
+                ptr_lib::shared_ptr<Interest> interest = ptr_lib::make_shared<Interest>(boost::cref(sig.getKeyLocator().getName()));
 
-	      ptr_lib::shared_ptr<ValidationRequest> nextStep = ptr_lib::make_shared<ValidationRequest>(interest, 
-													recursiveVerifiedCallback,
-													recursiveUnverifiedCallback,
-													3,
-													stepCount + 1);
-              return nextStep;
+                ptr_lib::shared_ptr<ValidationRequest> nextStep = ptr_lib::make_shared<ValidationRequest>(interest, 
+                                                                                                          recursiveVerifiedCallback,
+                                                                                                          recursiveUnverifiedCallback,
+                                                                                                          3,
+                                                                                                          stepCount + 1);
+                return nextStep;
+              }
+            }catch(SignatureSha256WithRsa::Error &e){
+              _LOG_DEBUG("SimplePolicyManager Error: " << e.what());
+              onVerifyFailed(data);
+              return SPM_NULL_VALIDATION_REQUEST_PTR; 
+            }catch(KeyLocator::Error &e){
+              _LOG_DEBUG("SimplePolicyManager Error: " << e.what());
+              onVerifyFailed(data);
+              return SPM_NULL_VALIDATION_REQUEST_PTR; 
             }
           }
       }
