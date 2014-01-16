@@ -20,8 +20,6 @@
 
 namespace ndn
 {
-
-  static ptr_lib::shared_ptr<Certificate> TCC_NULL_CERTIFICATE_PTR;
  
   class TTLCertificateCache : public CertificateCache
   {

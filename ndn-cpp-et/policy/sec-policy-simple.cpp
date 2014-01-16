@@ -27,13 +27,14 @@ using namespace std;
 
 namespace ndn
 {
+  const ptr_lib::shared_ptr<CertificateCache>  SecPolicySimple::DEFAULT_CERTIFICATE_CACHE_PTR = ptr_lib::shared_ptr<CertificateCache>();
 
   SecPolicySimple::SecPolicySimple(const int stepLimit,
-					   ptr_lib::shared_ptr<CertificateCache> certificateCache)
+                                   ptr_lib::shared_ptr<CertificateCache> certificateCache)
     : m_stepLimit(stepLimit)
     , m_certificateCache(certificateCache)
   {
-    if(m_certificateCache == SPM_NULL_CERTIFICATE_CACHE_PTR)
+    if(static_cast<bool>(m_certificateCache))
       m_certificateCache = ptr_lib::make_shared<TTLCertificateCache>();
   }
 
@@ -116,7 +117,7 @@ namespace ndn
     if(m_stepLimit == stepCount){
       _LOG_DEBUG("reach the maximum steps of verification");
       onVerifyFailed(data);
-      return SPM_NULL_VALIDATION_REQUEST_PTR;
+      return ptr_lib::shared_ptr<ValidationRequest>();
     }
 
     RuleList::iterator it = m_mustFailVerify.begin();
@@ -125,7 +126,7 @@ namespace ndn
 	if((*it)->satisfy(*data))
           {
             onVerifyFailed(data);
-            return SPM_NULL_VALIDATION_REQUEST_PTR;
+            return ptr_lib::shared_ptr<ValidationRequest>();
           }
       }
 
@@ -151,7 +152,7 @@ namespace ndn
                   onVerifyFailed(data);
                 onVerifyFailed(data);
 
-                return SPM_NULL_VALIDATION_REQUEST_PTR;
+                return ptr_lib::shared_ptr<ValidationRequest>();
               }
               else{
                 // _LOG_DEBUG("KeyLocator is not trust anchor");                
@@ -181,17 +182,17 @@ namespace ndn
             }catch(SignatureSha256WithRsa::Error &e){
               _LOG_DEBUG("SecPolicySimple Error: " << e.what());
               onVerifyFailed(data);
-              return SPM_NULL_VALIDATION_REQUEST_PTR; 
+              return ptr_lib::shared_ptr<ValidationRequest>(); 
             }catch(KeyLocator::Error &e){
               _LOG_DEBUG("SecPolicySimple Error: " << e.what());
               onVerifyFailed(data);
-              return SPM_NULL_VALIDATION_REQUEST_PTR; 
+              return ptr_lib::shared_ptr<ValidationRequest>(); 
             }
           }
       }
     
     onVerifyFailed(data);
-    return SPM_NULL_VALIDATION_REQUEST_PTR;
+    return ptr_lib::shared_ptr<ValidationRequest>();
   }
 
   bool 

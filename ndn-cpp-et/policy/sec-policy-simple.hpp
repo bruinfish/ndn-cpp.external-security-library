@@ -19,10 +19,6 @@
 
 namespace ndn {
 
-  static ptr_lib::shared_ptr<CertificateCache> SPM_NULL_CERTIFICATE_CACHE_PTR;
-  static ptr_lib::shared_ptr<ValidationRequest> SPM_NULL_VALIDATION_REQUEST_PTR;
-  static ptr_lib::shared_ptr<IdentityCertificate> SPM_NULL_IDENTITY_CERTIFICATE_PTR;
-
   class SecPolicySimple : public SecPolicy
   {
   public:
@@ -31,9 +27,11 @@ namespace ndn {
     typedef std::vector< ptr_lib::shared_ptr<SecRuleIdentity> > RuleList;
     typedef std::vector< ptr_lib::shared_ptr<Regex> > RegexList;
 
+    static const ptr_lib::shared_ptr<CertificateCache> DEFAULT_CERTIFICATE_CACHE_PTR;
+
   public:
     SecPolicySimple(const int stepLimit = 10,
-                        ptr_lib::shared_ptr<CertificateCache> certificateCache = SPM_NULL_CERTIFICATE_CACHE_PTR);
+                        ptr_lib::shared_ptr<CertificateCache> certificateCache = DEFAULT_CERTIFICATE_CACHE_PTR);
 
     virtual 
     ~SecPolicySimple() {}

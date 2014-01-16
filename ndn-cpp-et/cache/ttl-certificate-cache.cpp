@@ -101,7 +101,7 @@ namespace ndn
           return it->second.m_certificate;
         }
       else
-        return TCC_NULL_CERTIFICATE_PTR;
+        return ptr_lib::shared_ptr<const Certificate>();
     }
   }
   
