@@ -5,30 +5,30 @@
  * See COPYING for copyright and distribution information.
  */
 
-#ifndef NDN_POLICY_RULE_H
-#define NDN_POLICY_RULE_H
+#ifndef NDN_SEC_RULE_HPP
+#define NDN_SEC_RULE_HPP
 
 #include <ndn-cpp/data.hpp>
 
 namespace ndn
 {
 
-  class PolicyRule
+  class SecRule
   {
   public:
     struct Error : public std::runtime_error { Error(const std::string &what) : std::runtime_error(what) {} };
 
-    enum PolicyType{
-      IDENTITY_POLICY,
+    enum RuleType{
+      IDENTITY_RULE,
     };
 
-    PolicyRule(PolicyType policyType, bool isPositive)
-      :m_type(policyType),
+    SecRule(RuleType ruleType, bool isPositive)
+      :m_type(ruleType),
        m_isPositive(isPositive)
     {}
 
     virtual 
-    ~PolicyRule() 
+    ~SecRule() 
     {}
 
     virtual bool 
@@ -43,8 +43,8 @@ namespace ndn
     virtual bool
     satisfy(const Name& dataName, const Name& signerName) = 0;
 
-    PolicyType 
-    policyType()
+    RuleType 
+    type()
     {
       return m_type;
     }
@@ -56,7 +56,7 @@ namespace ndn
     }
     
   protected:
-    PolicyType m_type;
+    RuleType m_type;
     bool m_isPositive;
   };
 

@@ -6,25 +6,25 @@
  */
 
 
-#ifndef NDN_IDENTITY_POLICY_RULE_H
-#define NDN_IDENTITY_POLICY_RULE_H
+#ifndef NDN_SEC_RULE_IDENTITY_HPP
+#define NDN_SEC_RULE_IDENTITY_HPP
 
-#include "policy-rule.hpp"
-#include "ndn-cpp-et/regex/regex.hpp"
+#include "sec-rule.hpp"
+#include "../regex/regex.hpp"
 
 namespace ndn
 {
   
-  class IdentityPolicyRule : public PolicyRule
+  class SecRuleIdentity : public SecRule
   {
   public:
-    struct Error : public PolicyRule::Error { Error(const std::string &what) : PolicyRule::Error(what) {} };
+    struct Error : public SecRule::Error { Error(const std::string &what) : SecRule::Error(what) {} };
 
-    IdentityPolicyRule(const std::string& dataRegex, const std::string& signerRegex, const std::string& op, 
-		       const std::string& dataExpand, const std::string& signerExpand, bool isPositive);
+    SecRuleIdentity(const std::string& dataRegex, const std::string& signerRegex, const std::string& op, 
+                    const std::string& dataExpand, const std::string& signerExpand, bool isPositive);
 
     virtual
-    ~IdentityPolicyRule();
+    ~SecRuleIdentity();
     
     virtual bool 
     matchDataName(const Data& data);

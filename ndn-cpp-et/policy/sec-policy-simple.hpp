@@ -5,16 +5,16 @@
  * See COPYING for copyright and distribution information.
  */
 
-#ifndef NDN_SIMPLE_POLICY_MANAGER_H
-#define NDN_SIMPLE_POLICY_MANAGER_H
+#ifndef NDN_SEC_POLICY_SIMPLE_HPP
+#define NDN_SEC_POLICY_SIMPLE_HPP
 
-#include <ndn-cpp/security/policy/policy-manager.hpp>
-#include <ndn-cpp/security/certificate/identity-certificate.hpp>
+#include <ndn-cpp/security/sec-policy.hpp>
+#include <ndn-cpp/security/identity-certificate.hpp>
 
 #include <map>
-#include "identity-policy-rule.hpp"
-#include "ndn-cpp-et/regex/regex.hpp"
-#include "ndn-cpp-et/cache/certificate-cache.hpp"
+#include "sec-rule-identity.hpp"
+#include "../regex/regex.hpp"
+#include "../cache/certificate-cache.hpp"
 
 
 namespace ndn {
@@ -23,20 +23,20 @@ namespace ndn {
   static ptr_lib::shared_ptr<ValidationRequest> SPM_NULL_VALIDATION_REQUEST_PTR;
   static ptr_lib::shared_ptr<IdentityCertificate> SPM_NULL_IDENTITY_CERTIFICATE_PTR;
 
-  class SimplePolicyManager : public PolicyManager
+  class SecPolicySimple : public SecPolicy
   {
   public:
-    struct Error : public PolicyManager::Error { Error(const std::string &what) : PolicyManager::Error(what) {} };
+    struct Error : public SecPolicy::Error { Error(const std::string &what) : SecPolicy::Error(what) {} };
 
-    typedef std::vector< ptr_lib::shared_ptr<IdentityPolicyRule> > RuleList;
+    typedef std::vector< ptr_lib::shared_ptr<SecRuleIdentity> > RuleList;
     typedef std::vector< ptr_lib::shared_ptr<Regex> > RegexList;
 
   public:
-    SimplePolicyManager(const int stepLimit = 10,
+    SecPolicySimple(const int stepLimit = 10,
                         ptr_lib::shared_ptr<CertificateCache> certificateCache = SPM_NULL_CERTIFICATE_CACHE_PTR);
 
     virtual 
-    ~SimplePolicyManager() {}
+    ~SecPolicySimple() {}
 
     /**
      * @brief check if the received data packet can escape from verification
@@ -91,7 +91,7 @@ namespace ndn {
      * @param policy the signing policy
      */
     inline virtual void 
-    addSigningPolicyRule (ptr_lib::shared_ptr<IdentityPolicyRule> policy);
+    addSigningPolicyRule (ptr_lib::shared_ptr<SecRuleIdentity> rule);
 
     /**
      * @brief add a rule to infer the signing identity for a data packet
@@ -105,7 +105,7 @@ namespace ndn {
      * @param policy the verification policy
      */
     inline virtual void
-    addVerificationPolicyRule (ptr_lib::shared_ptr<IdentityPolicyRule> policy);
+    addVerificationPolicyRule (ptr_lib::shared_ptr<SecRuleIdentity> rule);
 
     /**
      * @brief add a rule to exempt a data packet from verification 
@@ -146,23 +146,23 @@ namespace ndn {
   };
 
   inline void 
-  SimplePolicyManager::addSigningPolicyRule (ptr_lib::shared_ptr<IdentityPolicyRule> policy)
-  { policy->isPositive() ? m_signPolicies.push_back(policy) : m_mustFailSign.push_back(policy); }
+  SecPolicySimple::addSigningPolicyRule (ptr_lib::shared_ptr<SecRuleIdentity> rule)
+  { rule->isPositive() ? m_signPolicies.push_back(rule) : m_mustFailSign.push_back(rule); }
 
   inline void
-  SimplePolicyManager::addSigningInference (ptr_lib::shared_ptr<Regex> inference)
+  SecPolicySimple::addSigningInference (ptr_lib::shared_ptr<Regex> inference)
   { m_signInference.push_back(inference); }
 
   inline void 
-  SimplePolicyManager::addVerificationPolicyRule (ptr_lib::shared_ptr<IdentityPolicyRule> policy)
-  { policy->isPositive() ? m_verifyPolicies.push_back(policy) : m_mustFailVerify.push_back(policy); }
+  SecPolicySimple::addVerificationPolicyRule (ptr_lib::shared_ptr<SecRuleIdentity> rule)
+  { rule->isPositive() ? m_verifyPolicies.push_back(rule) : m_mustFailVerify.push_back(rule); }
       
   inline void 
-  SimplePolicyManager::addVerificationExemption (ptr_lib::shared_ptr<Regex> exempt)
+  SecPolicySimple::addVerificationExemption (ptr_lib::shared_ptr<Regex> exempt)
   { m_verifyExempt.push_back(exempt); }
 
   inline void  
-  SimplePolicyManager::addTrustAnchor(ptr_lib::shared_ptr<IdentityCertificate> certificate)
+  SecPolicySimple::addTrustAnchor(ptr_lib::shared_ptr<IdentityCertificate> certificate)
   {
     Name certName = certificate->getName();
     m_trustAnchors.insert(std::pair<std::string, ptr_lib::shared_ptr<IdentityCertificate> >(certName.getPrefix(certName.size()-1).toUri(), certificate)); 

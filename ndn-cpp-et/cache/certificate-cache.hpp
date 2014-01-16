@@ -9,7 +9,7 @@
 #define NDN_CERTIFICATE_CACHE_H
 
 #include <ndn-cpp/name.hpp>
-#include <ndn-cpp/security/certificate/certificate.hpp>
+#include <ndn-cpp/security/certificate.hpp>
 
 namespace ndn
 {

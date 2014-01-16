@@ -5,11 +5,11 @@
  * See COPYING for copyright and distribution information.
  */
 
-#include "simple-policy-manager.hpp"
+#include "sec-policy-simple.hpp"
 
 #include <ndn-cpp/security/verifier.hpp>
-#include <ndn-cpp/security/signature/signature-sha256-with-rsa.hpp>
-#include "ndn-cpp-et/cache/ttl-certificate-cache.hpp"
+#include <ndn-cpp/security/signature-sha256-with-rsa.hpp>
+#include "../cache/ttl-certificate-cache.hpp"
 
 #include <boost/bind.hpp>
 #include <cryptopp/rsa.h>
@@ -21,14 +21,14 @@
 using namespace ndn::func_lib::placeholders;
 #endif
 
-INIT_LOGGER("SimplePolicyManager");
+INIT_LOGGER("SecPolicySimple");
 
 using namespace std;
 
 namespace ndn
 {
 
-  SimplePolicyManager::SimplePolicyManager(const int stepLimit,
+  SecPolicySimple::SecPolicySimple(const int stepLimit,
 					   ptr_lib::shared_ptr<CertificateCache> certificateCache)
     : m_stepLimit(stepLimit)
     , m_certificateCache(certificateCache)
@@ -38,7 +38,7 @@ namespace ndn
   }
 
   bool
-  SimplePolicyManager::requireVerify (const Data& data)
+  SecPolicySimple::requireVerify (const Data& data)
   {
     RuleList::iterator it = m_verifyPolicies.begin();
     for(; it != m_verifyPolicies.end(); it++)
@@ -58,7 +58,7 @@ namespace ndn
   }
 
   bool 
-  SimplePolicyManager::skipVerifyAndTrust (const Data& data)
+  SecPolicySimple::skipVerifyAndTrust (const Data& data)
   {
     RegexList::iterator it = m_verifyExempt.begin();
     for(; it != m_verifyExempt.end(); it++)
@@ -71,7 +71,7 @@ namespace ndn
   }
 
   void
-  SimplePolicyManager::onCertificateVerified(ptr_lib::shared_ptr<Data>signCertificate, 
+  SecPolicySimple::onCertificateVerified(ptr_lib::shared_ptr<Data>signCertificate, 
 					     ptr_lib::shared_ptr<Data>data, 
 					     const OnVerified& onVerified, 
 					     const OnVerifyFailed& onVerifyFailed)
@@ -89,7 +89,7 @@ namespace ndn
               return;
             }
         }catch(Signature::Error &e){
-          _LOG_DEBUG("SimplePolicyManager Error: " << e.what());
+          _LOG_DEBUG("SecPolicySimple Error: " << e.what());
           onVerifyFailed(data);
           return;
         }
@@ -102,13 +102,13 @@ namespace ndn
   }
 
   void
-  SimplePolicyManager::onCertificateUnverified(ptr_lib::shared_ptr<Data>signCertificate, 
+  SecPolicySimple::onCertificateUnverified(ptr_lib::shared_ptr<Data>signCertificate, 
 					       ptr_lib::shared_ptr<Data>data, 
 					       const OnVerifyFailed& onVerifyFailed)
   { onVerifyFailed(data); }
 
   ptr_lib::shared_ptr<ValidationRequest>
-  SimplePolicyManager::checkVerificationPolicy(const ptr_lib::shared_ptr<Data>& data, 
+  SecPolicySimple::checkVerificationPolicy(const ptr_lib::shared_ptr<Data>& data, 
 					       int stepCount, 
 					       const OnVerified& onVerified, 
 					       const OnVerifyFailed& onVerifyFailed)
@@ -155,14 +155,14 @@ namespace ndn
               }
               else{
                 // _LOG_DEBUG("KeyLocator is not trust anchor");                
-                OnVerified recursiveVerifiedCallback = func_lib::bind(&SimplePolicyManager::onCertificateVerified, 
+                OnVerified recursiveVerifiedCallback = func_lib::bind(&SecPolicySimple::onCertificateVerified, 
                                                                       this, 
                                                                       _1, 
                                                                       data, 
                                                                       onVerified, 
                                                                       onVerifyFailed);
 
-                OnVerifyFailed recursiveUnverifiedCallback = func_lib::bind(&SimplePolicyManager::onCertificateUnverified, 
+                OnVerifyFailed recursiveUnverifiedCallback = func_lib::bind(&SecPolicySimple::onCertificateUnverified, 
                                                                             this, 
                                                                             _1, 
                                                                             data, 
@@ -179,11 +179,11 @@ namespace ndn
                 return nextStep;
               }
             }catch(SignatureSha256WithRsa::Error &e){
-              _LOG_DEBUG("SimplePolicyManager Error: " << e.what());
+              _LOG_DEBUG("SecPolicySimple Error: " << e.what());
               onVerifyFailed(data);
               return SPM_NULL_VALIDATION_REQUEST_PTR; 
             }catch(KeyLocator::Error &e){
-              _LOG_DEBUG("SimplePolicyManager Error: " << e.what());
+              _LOG_DEBUG("SecPolicySimple Error: " << e.what());
               onVerifyFailed(data);
               return SPM_NULL_VALIDATION_REQUEST_PTR; 
             }
@@ -195,7 +195,7 @@ namespace ndn
   }
 
   bool 
-  SimplePolicyManager::checkSigningPolicy(const Name & dataName, const Name & certName)
+  SecPolicySimple::checkSigningPolicy(const Name & dataName, const Name & certName)
   {
     RuleList::iterator it = m_mustFailSign.begin();
     for(; it != m_mustFailSign.end(); it++)
@@ -215,7 +215,7 @@ namespace ndn
   }
   
   Name
-  SimplePolicyManager::inferSigningIdentity(const Name & dataName)
+  SecPolicySimple::inferSigningIdentity(const Name & dataName)
   {
     RegexList::iterator it = m_signInference.begin();
     for(; it != m_signInference.end(); it++)

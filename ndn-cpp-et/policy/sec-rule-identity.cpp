@@ -5,25 +5,25 @@
  * See COPYING for copyright and distribution information.
  */
 
-#include "identity-policy-rule.hpp"
+#include "sec-rule-identity.hpp"
 
-#include <ndn-cpp/security/signature/signature-sha256-with-rsa.hpp>
+#include <ndn-cpp/security/signature-sha256-with-rsa.hpp>
 #include <ndn-cpp/security/security-common.hpp>
 
 
 
 #include "logging.h"
 
-INIT_LOGGER ("IdentityPolicyRule");
+INIT_LOGGER ("SecRuleIdentity");
 
 using namespace std;
 
 namespace ndn
 {
 
-  IdentityPolicyRule::IdentityPolicyRule (const string& dataRegex, const string& signerRegex, const string& op, 
-					  const string& dataExpand, const string& signerExpand, bool isPositive)
-    : PolicyRule(PolicyRule::IDENTITY_POLICY, isPositive),
+  SecRuleIdentity::SecRuleIdentity (const string& dataRegex, const string& signerRegex, const string& op, 
+                                    const string& dataExpand, const string& signerExpand, bool isPositive)
+    : SecRule(SecRule::IDENTITY_RULE, isPositive),
       m_dataRegex(dataRegex),
       m_signerRegex(signerRegex),
       m_op(op),
@@ -36,11 +36,11 @@ namespace ndn
       throw Error("op is wrong!");
   }
 
-  IdentityPolicyRule::~IdentityPolicyRule()
+  SecRuleIdentity::~SecRuleIdentity()
   { }
 
   bool 
-  IdentityPolicyRule::satisfy (const Data& data)
+  SecRuleIdentity::satisfy (const Data& data)
   {
     Name dataName = data.getName();
     
@@ -58,7 +58,7 @@ namespace ndn
   }
   
   bool 
-  IdentityPolicyRule::satisfy (const Name& dataName, const Name& signerName)
+  SecRuleIdentity::satisfy (const Name& dataName, const Name& signerName)
   {
     // _LOG_DEBUG("Rule: " << *toXmlElement());
     // _LOG_DEBUG("dataName: "  << dataName << " signerName: " << signerName);
@@ -79,13 +79,13 @@ namespace ndn
   }
 
   bool 
-  IdentityPolicyRule::matchDataName (const Data& data)
+  SecRuleIdentity::matchDataName (const Data& data)
   {
     return m_dataNameRegex.match(data.getName());
   }
 
   bool
-  IdentityPolicyRule::matchSignerName (const Data& data)
+  SecRuleIdentity::matchSignerName (const Data& data)
   {    
     DigestAlgorithm digestAlg = DIGEST_ALGORITHM_SHA256; //For temporary, should be assigned by Signature.getAlgorithm();
     KeyType keyType = KEY_TYPE_RSA; //For temporary, should be assigned by Publickey.getKeyType();
@@ -100,7 +100,7 @@ namespace ndn
   }
 
   bool 
-  IdentityPolicyRule::compare(const Name & dataName, const Name & signerName)
+  SecRuleIdentity::compare(const Name & dataName, const Name & signerName)
   {
     // _LOG_DEBUG("data namespace: " << dataName.toUri());
     // _LOG_DEBUG("signer namespace: " << signerName.toUri());
