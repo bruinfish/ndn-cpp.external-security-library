@@ -8,8 +8,8 @@
 #ifndef NDN_SEC_POLICY_SIMPLE_HPP
 #define NDN_SEC_POLICY_SIMPLE_HPP
 
-#include <ndn-cpp/security/sec-policy.hpp>
-#include <ndn-cpp/security/identity-certificate.hpp>
+#include <ndn-cpp-dev/security/sec-policy.hpp>
+#include <ndn-cpp-dev/security/identity-certificate.hpp>
 
 #include <map>
 #include "sec-rule-identity.hpp"

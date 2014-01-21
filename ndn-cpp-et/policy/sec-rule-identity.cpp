@@ -7,8 +7,8 @@
 
 #include "sec-rule-identity.hpp"
 
-#include <ndn-cpp/security/signature-sha256-with-rsa.hpp>
-#include <ndn-cpp/security/security-common.hpp>
+#include <ndn-cpp-dev/security/signature-sha256-with-rsa.hpp>
+#include <ndn-cpp-dev/security/security-common.hpp>
 
 
 

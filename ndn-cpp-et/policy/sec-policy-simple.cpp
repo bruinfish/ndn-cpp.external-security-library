@@ -7,12 +7,11 @@
 
 #include "sec-policy-simple.hpp"
 
-#include <ndn-cpp/security/verifier.hpp>
-#include <ndn-cpp/security/signature-sha256-with-rsa.hpp>
+#include <ndn-cpp-dev/security/verifier.hpp>
+#include <ndn-cpp-dev/security/signature-sha256-with-rsa.hpp>
 #include "../cache/ttl-certificate-cache.hpp"
 
 #include <boost/bind.hpp>
-#include <cryptopp/rsa.h>
 
 #include "logging.h"
 

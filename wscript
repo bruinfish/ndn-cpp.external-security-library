@@ -7,12 +7,16 @@ def options(opt):
     opt.add_option('--debug',action='store_true',default=False,dest='debug',help='''debugging mode''')
     opt.add_option('--test', action='store_true',default=False,dest='_test',help='''build unit tests''')
     opt.add_option('--log4cxx', action='store_true',default=False,dest='log4cxx',help='''Compile with log4cxx logging support''')
+    opt.add_option('--with-ndn-cpp',action='store',type='string',default=None,dest='ndn_cpp_dir',
+                   help='''Use NDN-CPP library from the specified path''')
+    opt.add_option('--with-c++11', action='store_true', default=False, dest='use_cxx11',
+                   help='''Enable C++11 compiler features''')
 
     opt.load('compiler_c compiler_cxx gnu_dirs boost doxygen')
-    opt.load('ndn_cpp cryptopp', tooldir=['waf-tools'])
+    opt.load('cryptopp', tooldir=['waf-tools'])
 
 def configure(conf):
-    conf.load("compiler_c compiler_cxx boost ndn_cpp gnu_dirs cryptopp")
+    conf.load("compiler_c compiler_cxx boost gnu_dirs cryptopp")
     try:
         conf.load("doxygen")
     except:
@@ -20,28 +24,47 @@ def configure(conf):
 
     if conf.options.debug:
         conf.define ('_DEBUG', 1)
-        conf.add_supported_cxxflags (cxxflags = ['-O0',
-                                                 '-Wall',
-                                                 '-Wno-unused-variable',
-                                                 '-g3',
-                                                 '-Wno-unused-private-field', # only clang supports
-                                                 '-fcolor-diagnostics',       # only clang supports
-                                                 '-Qunused-arguments',        # only clang supports
-                                                 '-Wno-tautological-compare', # suppress warnings from CryptoPP
-                                                 '-Wno-unused-function',      # another annoying warning from CryptoPP
-                                                 ])
+        flags = ['-O0',
+                 '-Wall',
+                 '-Wno-unused-variable',
+                 '-g3',
+                 '-Wno-unused-private-field', # only clang supports
+                 '-fcolor-diagnostics',       # only clang supports
+                 '-Qunused-arguments',        # only clang supports
+                 '-Wno-deprecated-declarations',
+                 '-Wno-tautological-compare', # suppress warnings from CryptoPP
+                 '-Wno-unused-function',      # suppress warnings from CryptoPP
+                 '-Wno-unneeded-internal-declaration' # suppress warnings from CryptoPP
+                 ]
+        conf.add_supported_cxxflags (cxxflags = flags)
     else:
-        conf.add_supported_cxxflags (cxxflags = ['-O3', '-g', '-Wno-tautological-compare', '-Wno-unused-function'])
+        flags = ['-O3', 
+                 '-g', 
+                 '-Wno-tautological-compare', 
+                 '-Wno-unused-function', 
+                 '-Wno-deprecated-declarations',
+                 '-Wno-unneeded-internal-declaration'
+                 ]
+        conf.add_supported_cxxflags (cxxflags = flags)
         
     conf.define ("NDN_CPP_EXTERNAL_TOOLS_VERSION", VERSION)
 
-    conf.check_ndncpp (path=conf.options.ndn_cpp_dir)
+    if conf.options.use_cxx11:
+        conf.add_supported_cxxflags(cxxflags = ['-std=c++11', '-std=c++0x'])
+
+    if not conf.options.ndn_cpp_dir:
+        conf.check_cfg(package='libndn-cpp-dev', args=['--cflags', '--libs'], uselib_store='NDN_CPP', mandatory=True)
+    else:
+        conf.check_cxx(lib='ndn-cpp-dev', uselib_store='NDN_CPP', 
+                       cxxflags="-I%s/include" % conf.options.ndn_cpp_dir,
+                       linkflags="-L%s/lib" % conf.options.ndn_cpp_dir,
+                       mandatory=True)
 
     if conf.options.log4cxx:
         conf.check_cfg(package='liblog4cxx', args=['--cflags', '--libs'], uselib_store='LOG4CXX', mandatory=True)
         conf.define ("HAVE_LOG4CXX", 1)
 
-    conf.check_cryptopp(path=conf.options.cryptopp_dir)
+    conf.check_cryptopp(path=conf.options.cryptopp_dir);
 
     conf.check_boost(lib='system test regex thread')
 
@@ -60,12 +83,12 @@ def build (bld):
 
     libndn_cpp_et = bld (
         target="ndn-cpp-et",
-        # vnum = "0.0.1",
-        features=['cxx', 'cxxshlib'],
+        vnum = "0.0.1",
+        features=['cxx', 'cxxshlib', 'cxxstlib'],
         source = bld.path.ant_glob(['ndn-cpp-et/**/*.cpp',
                                     'logging.cc',
                                     'libndn-cpp-et.pc.in']),
-        use = 'BOOST BOOST_REGEX BOOST_THREAD NDNCPP LOG4CXX',
+        use = 'BOOST BOOST_REGEX BOOST_THREAD NDN_CPP LOG4CXX',
         includes = ".",
         )
 
@@ -125,8 +148,3 @@ def sphinx (bld):
          outdir = "doc/html",
          source = "doc/source/conf.py")
 
-
-@TaskGen.extension('.mm')
-def mm_hook(self, node):
-    """Alias .mm files to be compiled the same as .cc files, gcc will do the right thing."""
-    return self.create_compiled_task('cxx', node)

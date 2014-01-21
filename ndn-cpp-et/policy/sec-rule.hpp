@@ -8,7 +8,7 @@
 #ifndef NDN_SEC_RULE_HPP
 #define NDN_SEC_RULE_HPP
 
-#include <ndn-cpp/data.hpp>
+#include <ndn-cpp-dev/data.hpp>
 
 namespace ndn
 {

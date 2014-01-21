@@ -8,8 +8,8 @@
 #ifndef NDN_CERTIFICATE_CACHE_H
 #define NDN_CERTIFICATE_CACHE_H
 
-#include <ndn-cpp/name.hpp>
-#include <ndn-cpp/security/certificate.hpp>
+#include <ndn-cpp-dev/name.hpp>
+#include <ndn-cpp-dev/security/certificate.hpp>
 
 namespace ndn
 {

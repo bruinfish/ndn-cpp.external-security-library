@@ -10,7 +10,7 @@
 #define NDN_REGEX_MATCHER_H
 
 #include <string>
-#include <ndn-cpp/name.hpp>
+#include <ndn-cpp-dev/name.hpp>
 #include "regex-backref-manager.hpp"
 
 namespace ndn

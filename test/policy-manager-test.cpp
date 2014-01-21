@@ -8,11 +8,11 @@
 // #define BOOST_TEST_MODULE PolicyManagerTests
 #include <boost/test/unit_test.hpp>
 
-#include <ndn-cpp/face.hpp>
-#include <ndn-cpp/security/key-chain.hpp>
-#include <ndn-cpp/security/verifier.hpp>
+#include <ndn-cpp-dev/face.hpp>
+#include <ndn-cpp-dev/security/key-chain.hpp>
+#include <ndn-cpp-dev/security/verifier.hpp>
 
-#include "ndn-cpp-et/policy-manager/simple-policy-manager.hpp"
+#include "ndn-cpp-et/policy/sec-policy-simple.hpp"
 
 #include <iostream>
 
@@ -21,7 +21,7 @@
 using namespace ndn;
 using namespace std;
 
-BOOST_AUTO_TEST_SUITE(PolicyManagerTests)
+BOOST_AUTO_TEST_SUITE(PolicyTests)
 
 void
 onVerified(const ptr_lib::shared_ptr<Data>& data)
@@ -85,7 +85,7 @@ getRoot(const string & TrustAnchor)
   // return ptr_lib::make_shared<IdentityCertificate>();
 }
 
-BOOST_AUTO_TEST_CASE(SimplePolicyManagerTest)
+BOOST_AUTO_TEST_CASE(SecPolicySimpleTest)
 {
 
   //ndn ksk
@@ -113,25 +113,25 @@ iVUF1QIBEQAA");
     ptr_lib::shared_ptr<Face> face = ptr_lib::make_shared<Face>();
 
     ptr_lib::shared_ptr<KeyChain> keyChain = ptr_lib::make_shared<KeyChain>();
-    ptr_lib::shared_ptr<SimplePolicyManager> policyManager = ptr_lib::make_shared<SimplePolicyManager>();
-    ptr_lib::shared_ptr<Verifier> verifier = ptr_lib::make_shared<Verifier>(policyManager);
+    ptr_lib::shared_ptr<SecPolicySimple> policy = ptr_lib::make_shared<SecPolicySimple>();
+    ptr_lib::shared_ptr<Verifier> verifier = ptr_lib::make_shared<Verifier>(policy);
     verifier->setFace(face);
     
-    ptr_lib::shared_ptr<IdentityPolicyRule> rule1 = ptr_lib::make_shared<IdentityPolicyRule>("^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>",
-                                                                                             "^([^<KEY>]*)<KEY><dsk-.*><ID-CERT>$",
-                                                                                             ">", "\\1\\2", "\\1", true);
-    ptr_lib::shared_ptr<IdentityPolicyRule> rule2 = ptr_lib::make_shared<IdentityPolicyRule>("^([^<KEY>]*)<KEY><dsk-.*><ID-CERT>",
-                                                                                             "^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>$",
-                                                                                             "==", "\\1", "\\1\\2", true);
-    ptr_lib::shared_ptr<IdentityPolicyRule> rule3 = ptr_lib::make_shared<IdentityPolicyRule>("^(<>*)$", 
-                                                                                             "^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>$", 
-                                                                                             ">", "\\1", "\\1\\2", true);
+    ptr_lib::shared_ptr<SecRuleIdentity> rule1 = ptr_lib::make_shared<SecRuleIdentity>("^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>",
+                                                                                       "^([^<KEY>]*)<KEY><dsk-.*><ID-CERT>$",
+                                                                                       ">", "\\1\\2", "\\1", true);
+    ptr_lib::shared_ptr<SecRuleIdentity> rule2 = ptr_lib::make_shared<SecRuleIdentity>("^([^<KEY>]*)<KEY><dsk-.*><ID-CERT>",
+                                                                                       "^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>$",
+                                                                                       "==", "\\1", "\\1\\2", true);
+    ptr_lib::shared_ptr<SecRuleIdentity> rule3 = ptr_lib::make_shared<SecRuleIdentity>("^(<>*)$", 
+                                                                                       "^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>$", 
+                                                                                       ">", "\\1", "\\1\\2", true);
 
-    policyManager->addVerificationPolicyRule(rule1);
-    policyManager->addVerificationPolicyRule(rule2);
-    policyManager->addVerificationPolicyRule(rule3);
+    policy->addVerificationPolicyRule(rule1);
+    policy->addVerificationPolicyRule(rule2);
+    policy->addVerificationPolicyRule(rule3);
 
-    policyManager->addTrustAnchor(root);
+    policy->addTrustAnchor(root);
 
     Name name0("/ndn/edu/ucla/cs/yingdi/tmp04");
     face->expressInterest(name0, boost::bind(onData, _1, _2, verifier), boost::bind(onTimeout, _1));
@@ -151,7 +151,7 @@ iVUF1QIBEQAA");
     face->setInterestFilter(name, boost::bind(onInterest, _1, _2, _3, _4, data, face), boost::bind(onRegisterFailed, _1));
   
     
-    cout << "Express name " << namex << endl;
+    cout << "Express name " << name << endl;
     // Use bind to pass the counter object to the callbacks.
     face->expressInterest(name, boost::bind(onData, _1, _2, verifier), boost::bind(onTimeout, _1));
     

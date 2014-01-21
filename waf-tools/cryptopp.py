@@ -74,4 +74,3 @@ def check_cryptopp(self,*k,**kw):
 		Logs.pprint('CYAN','	CRYPTOPP include : %s'%self.env['INCLUDES_%s'%var])
 		Logs.pprint('CYAN','	CRYPTOPP lib     : %s'%self.env['LIB_%s'%var])
 		Logs.pprint('CYAN','	CRYPTOPP libpath : %s'%self.env['LIBPATH_%s'%var])
-

@@ -9,7 +9,7 @@
 #define NDN_REGEX_BACKREF_MANAGER_H
 
 #include <vector>
-#include <ndn-cpp/common.hpp>
+#include <ndn-cpp-dev/common.hpp>
 
 namespace ndn
 {
