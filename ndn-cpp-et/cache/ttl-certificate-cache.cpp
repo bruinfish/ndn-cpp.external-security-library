@@ -7,145 +7,152 @@
 
 #include "ttl-certificate-cache.hpp"
 
-#include "logging.h"
-
 #include <iostream>
 
-INIT_LOGGER("TTLCertificateCache")
+#include "logging.h"
 
-#if NDN_CPP_HAVE_CXX11
-// In the std library, the placeholders are in a different namespace than boost.
-using namespace ndn::func_lib::placeholders;
-#endif
+
+INIT_LOGGER("TTLCertificateCache")
 
 using namespace std;
 using namespace boost;
 
 namespace ndn
 {    
-  TTLCertificateCache::TTLCertificateCache(int maxSize, int interval)
-    : m_maxSize(maxSize)
-    , m_running(true)
-    , m_interval(interval)
-  {
-    start();
-  }
 
-  TTLCertificateCache::~TTLCertificateCache()
-  {
-    shutdown();
-  }
 
-  void
-  TTLCertificateCache::start()
-  {
-    m_thread = thread (&TTLCertificateCache::cleanLoop, this);
-  }
+class TTLCertificateCache::TTLCacheEntry
+{
+public:
+  TTLCacheEntry()
+  {}
 
-  void
-  TTLCertificateCache::shutdown()
-  {
+  TTLCacheEntry(const Time& timestamp, ptr_lib::shared_ptr<Certificate> certificate, TrackerList::iterator it)
+    : m_timestamp(timestamp)
+    , m_certificate(certificate)
+    , m_it(it)
+  {}
 
-    {
-      UniqueRecLock lock(m_mutex);
-      m_running = false;
-    }    
-    m_thread.interrupt();
-    m_thread.join ();
+  Time m_timestamp;
+  ptr_lib::shared_ptr<Certificate> m_certificate;
+  TrackerList::iterator m_it;
+};
+   
 
-  }
+TTLCertificateCache::TTLCertificateCache(int maxSize, int interval)
+  : m_maxSize(maxSize)
+  , m_running(true)
+  , m_interval(interval)
+{ start(); }
+
+TTLCertificateCache::~TTLCertificateCache()
+{ shutdown(); }
+
+void
+TTLCertificateCache::start()
+{
+  // TODO: When we merge it to ndn-cpp-dev, we will get rid of this thread and use io_service to schedule necessary cleaning up event.
+  m_thread = thread (&TTLCertificateCache::cleanLoop, this); 
+}
+
+void
+TTLCertificateCache::shutdown()
+{
   
-  void
-  TTLCertificateCache::insertCertificate(ptr_lib::shared_ptr<Certificate> certificate)
   {
-    Name name = certificate->getName().getPrefix(certificate->getName().size()-1);
-    Time expire = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::milliseconds(certificate->getMetaInfo().getFreshnessPeriod());
-    
-    {
-      UniqueRecLock lock(m_mutex);
-      Cache::iterator it = m_cache.find(name.toUri());
-      if(it != m_cache.end())
-        {
-          m_lruList.splice(m_lruList.end(), m_lruList, it->second.m_it);
-          it->second.m_timestamp = expire;
-          it->second.m_certificate = certificate;
-        }
-      else
-        {
-          while(m_lruList.size() >= m_maxSize)
-            {
-              m_cache.erase(m_lruList.front().toUri());
-              m_lruList.pop_front();
-            }
-          TrackerList::iterator it = m_lruList.insert(m_lruList.end(), name);
-          TTLCacheEntry cacheEntry(expire, certificate, it);
-          m_cache.insert(pair <string, TTLCacheEntry> (name.toUri(), cacheEntry));
-        }
-    }
-  }
-
-  ptr_lib::shared_ptr<const Certificate> 
-  TTLCertificateCache::getCertificate(const Name & certName, bool hasVersion)
-  {
-    Name certificateName;
-    if(hasVersion)
-      certificateName = certName.getPrefix(certName.size()-1);
-    else
-      certificateName = certName;
-    {
-      UniqueRecLock lock(m_mutex);
-      Cache::iterator it = m_cache.find(certificateName.toUri());
-      if(it != m_cache.end())
-        {
-          m_lruList.splice(m_lruList.end(), m_lruList, it->second.m_it);
-          return it->second.m_certificate;
-        }
-      else
-        return ptr_lib::shared_ptr<const Certificate>();
-    }
-  }
+    UniqueRecLock lock(m_mutex);
+    m_running = false;
+  }    
+  m_thread.interrupt();
+  m_thread.join ();
   
-  void
-  TTLCertificateCache::cleanLoop()
+}
+  
+void
+TTLCertificateCache::insertCertificate(ptr_lib::shared_ptr<Certificate> certificate)
+{
+  Name name = certificate->getName().getPrefix(-1);
+  Time expire = posix_time::microsec_clock::universal_time() + posix_time::milliseconds(certificate->getFreshnessPeriod());
+  
   {
-    while(m_running)
+    UniqueRecLock lock(m_mutex);
+    Cache::iterator it = m_cache.find(name);
+    if(it != m_cache.end())
       {
-        Time now = boost::posix_time::microsec_clock::universal_time();
-        {
-          UniqueRecLock lock(m_mutex);
-          // _LOG_DEBUG("Round: " << boost::posix_time::to_iso_string(now));
-          Cache::iterator it = m_cache.begin();
-          for(;it != m_cache.end(); it++)
-            {
-              // _LOG_DEBUG("size: " << m_cache.size() << " " << it->second.m_it->toUri() << " timestamp: " << boost::posix_time::to_iso_string(it->second.m_timestamp));
-              if(now > it->second.m_timestamp)
-                {
-                  // _LOG_DEBUG("ERASE");
-                  m_lruList.erase(it->second.m_it);
-                  m_cache.erase(it);
-                }
-            }
-        }        
-        try{
-#if BOOST_VERSION >= 1050000
-          this_thread::sleep_for(chrono::seconds(m_interval));
-#else
-          this_thread::sleep(posix_time::seconds(m_interval));
-#endif
-        }catch(thread_interrupted& e){
-          break;
-        }
+        m_lruList.splice(m_lruList.end(), m_lruList, it->second.m_it);
+        it->second.m_timestamp = expire;
+        it->second.m_certificate = certificate;
+      }
+    else
+      {
+        while(m_lruList.size() >= m_maxSize)
+          {
+            m_cache.erase(m_lruList.front());
+            m_lruList.pop_front();
+          }
+        TrackerList::iterator it = m_lruList.insert(m_lruList.end(), name);
+        m_cache[name] = TTLCacheEntry(expire, certificate, it);
       }
   }
+}
 
-  void
-  TTLCertificateCache::printContent()
+ptr_lib::shared_ptr<const Certificate> 
+TTLCertificateCache::getCertificate(const Name & certificateName)
+{
   {
-    TrackerList::iterator it = m_lruList.begin();
-    for(; it != m_lruList.end(); it++)
-        cout << it->toUri() << " ";
-    cout << endl;
+    UniqueRecLock lock(m_mutex);
+    Cache::iterator it = m_cache.find(certificateName);
+    if(it != m_cache.end())
+      {
+        m_lruList.splice(m_lruList.end(), m_lruList, it->second.m_it);
+        return it->second.m_certificate;
+      }
+    else
+      return ptr_lib::shared_ptr<const Certificate>();
   }
+}
+
+void
+TTLCertificateCache::cleanLoop()
+{
+  while(m_running)
+    {
+      Time now = boost::posix_time::microsec_clock::universal_time();
+      {
+        UniqueRecLock lock(m_mutex);
+        // _LOG_DEBUG("Round: " << boost::posix_time::to_iso_string(now));
+        Cache::iterator it = m_cache.begin();
+        for(;it != m_cache.end(); it++)
+          {
+            // _LOG_DEBUG("size: " << m_cache.size() << " " << it->second.m_it->toUri() << " timestamp: " << boost::posix_time::to_iso_string(it->second.m_timestamp));
+            if(now > it->second.m_timestamp)
+              {
+                // _LOG_DEBUG("ERASE");
+                m_lruList.erase(it->second.m_it);
+                m_cache.erase(it);
+              }
+          }
+      }        
+      try{
+#if BOOST_VERSION >= 1050000
+        this_thread::sleep_for(chrono::seconds(m_interval));
+#else
+        this_thread::sleep(posix_time::seconds(m_interval));
+#endif
+      }catch(thread_interrupted& e){
+        break;
+      }
+    }
+}
+
+void
+TTLCertificateCache::printContent()
+{
+  TrackerList::iterator it = m_lruList.begin();
+  for(; it != m_lruList.end(); it++)
+        cout << it->toUri() << " ";
+  cout << endl;
+}
 
 }//ndn
 

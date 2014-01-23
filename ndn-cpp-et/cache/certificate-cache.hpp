@@ -24,7 +24,7 @@ namespace ndn
     insertCertificate(ptr_lib::shared_ptr<Certificate> certificate) = 0;
 
     virtual ptr_lib::shared_ptr<const Certificate> 
-    getCertificate(const Name& certificateName, bool hasVersion=false) = 0;
+    getCertificate(const Name& certificateNameWithoutVersion) = 0;
   };
 
 }//ndn

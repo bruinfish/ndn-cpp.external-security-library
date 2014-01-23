@@ -139,10 +139,10 @@ namespace ndn
               
               Name keyLocatorName = sig.getKeyLocator().getName();
               ptr_lib::shared_ptr<const Certificate> trustedCert;
-              if(m_trustAnchors.end() == m_trustAnchors.find(keyLocatorName.toUri()))
+              if(m_trustAnchors.end() == m_trustAnchors.find(keyLocatorName))
                 trustedCert = m_certificateCache->getCertificate(keyLocatorName);
               else
-                trustedCert = m_trustAnchors[keyLocatorName.toUri()];
+                trustedCert = m_trustAnchors[keyLocatorName];
 
               if(static_cast<bool>(trustedCert)){
                 if(Verifier::verifySignature(*data, sig, trustedCert->getPublicKeyInfo()))
