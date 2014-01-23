@@ -23,7 +23,7 @@ namespace ndn
 
   SecRuleIdentity::SecRuleIdentity (const string& dataRegex, const string& signerRegex, const string& op, 
                                     const string& dataExpand, const string& signerExpand, bool isPositive)
-    : SecRule(SecRule::IDENTITY_RULE, isPositive),
+    : SecRule(isPositive),
       m_dataRegex(dataRegex),
       m_signerRegex(signerRegex),
       m_op(op),
