@@ -66,7 +66,7 @@ def configure(conf):
 
     conf.check_cryptopp(path=conf.options.cryptopp_dir);
 
-    conf.check_boost(lib='system test regex thread')
+    conf.check_boost(lib='system unit_test_framework regex thread')
 
     boost_version = conf.env.BOOST_VERSION.split('_')
     if int(boost_version[0]) < 1 or int(boost_version[1]) < 46:
@@ -88,7 +88,7 @@ def build (bld):
         source = bld.path.ant_glob(['ndn-cpp-et/**/*.cpp',
                                     'logging.cc',
                                     'libndn-cpp-et.pc.in']),
-        use = 'BOOST BOOST_REGEX BOOST_THREAD NDN_CPP LOG4CXX',
+        use = 'BOOST NDN_CPP LOG4CXX',
         includes = ".",
         )
 
@@ -99,7 +99,7 @@ def build (bld):
           features = "cxx cxxprogram",
           defines = "WAF",
           source = bld.path.ant_glob(['test/*.cpp']),
-          use = 'BOOST_TEST BOOST_REGEX LOG4CXX ndn-cpp-et CRYPTOPP',
+          use = 'BOOST LOG4CXX ndn-cpp-et CRYPTOPP',
           includes = ".",
           install_prefix = None,
           )

@@ -5,7 +5,6 @@
  * See COPYING for copyright and distribution information.
  */
 
-// #define BOOST_TEST_MODULE PolicyManagerTests
 #include <boost/test/unit_test.hpp>
 
 #include <ndn-cpp-dev/face.hpp>
@@ -21,7 +20,7 @@
 using namespace ndn;
 using namespace std;
 
-BOOST_AUTO_TEST_SUITE(PolicyTests)
+BOOST_AUTO_TEST_SUITE(PolicyTest)
 
 void
 onVerified(const ptr_lib::shared_ptr<Data>& data)
@@ -85,7 +84,7 @@ getRoot(const string & TrustAnchor)
   // return ptr_lib::make_shared<IdentityCertificate>();
 }
 
-BOOST_AUTO_TEST_CASE(SecPolicySimpleTest)
+BOOST_AUTO_TEST_CASE(Simple)
 {
 
   //ndn ksk

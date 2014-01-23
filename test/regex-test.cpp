@@ -5,6 +5,8 @@
  * See COPYING for copyright and distribution information.
  */
 
+#include <boost/test/unit_test.hpp>
+
 #include "ndn-cpp-et/regex/regex-backref-manager.hpp"
 #include "ndn-cpp-et/regex/regex-component-matcher.hpp"
 #include "ndn-cpp-et/regex/regex-component-set-matcher.hpp"
@@ -14,15 +16,12 @@
 #include "ndn-cpp-et/regex/regex-top-matcher.hpp"
 #include "ndn-cpp-et/regex/regex.hpp"
 
-#define BOOST_TEST_MODULE RegexTests
-#include <boost/test/unit_test.hpp>
-
 #include <iostream>
 
 using namespace ndn;
 using namespace std;
 
-BOOST_AUTO_TEST_SUITE(RegexTests)
+BOOST_AUTO_TEST_SUITE(RegexTest)
 
 BOOST_AUTO_TEST_CASE(ComponentMatcher)
 {
