@@ -12,7 +12,7 @@
 #include <ndn-cpp-dev/security/key-chain.hpp>
 #include <ndn-cpp-dev/security/verifier.hpp>
 
-#include "ndn-cpp-et/policy/sec-policy-simple.hpp"
+#include "../ndn-cpp-et/policy/sec-policy-simple.hpp"
 
 #include <iostream>
 
@@ -117,13 +117,13 @@ iVUF1QIBEQAA");
     ptr_lib::shared_ptr<Verifier> verifier = ptr_lib::make_shared<Verifier>(policy);
     verifier->setFace(face);
     
-    ptr_lib::shared_ptr<SecRuleIdentity> rule1 = ptr_lib::make_shared<SecRuleIdentity>("^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>",
+    ptr_lib::shared_ptr<SecRuleRelative> rule1 = ptr_lib::make_shared<SecRuleRelative>("^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>",
                                                                                        "^([^<KEY>]*)<KEY><dsk-.*><ID-CERT>$",
                                                                                        ">", "\\1\\2", "\\1", true);
-    ptr_lib::shared_ptr<SecRuleIdentity> rule2 = ptr_lib::make_shared<SecRuleIdentity>("^([^<KEY>]*)<KEY><dsk-.*><ID-CERT>",
+    ptr_lib::shared_ptr<SecRuleRelative> rule2 = ptr_lib::make_shared<SecRuleRelative>("^([^<KEY>]*)<KEY><dsk-.*><ID-CERT>",
                                                                                        "^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>$",
                                                                                        "==", "\\1", "\\1\\2", true);
-    ptr_lib::shared_ptr<SecRuleIdentity> rule3 = ptr_lib::make_shared<SecRuleIdentity>("^(<>*)$", 
+    ptr_lib::shared_ptr<SecRuleRelative> rule3 = ptr_lib::make_shared<SecRuleRelative>("^(<>*)$", 
                                                                                        "^([^<KEY>]*)<KEY>(<>*)<ksk-.*><ID-CERT>$", 
                                                                                        ">", "\\1", "\\1\\2", true);
 

@@ -12,7 +12,7 @@
 #include <ndn-cpp-dev/security/identity-certificate.hpp>
 
 #include <map>
-#include "sec-rule-identity.hpp"
+#include "sec-rule-relative.hpp"
 #include "../regex/regex.hpp"
 #include "../cache/certificate-cache.hpp"
 
@@ -24,7 +24,7 @@ class SecPolicySimple : public SecPolicy
 public:
   struct Error : public SecPolicy::Error { Error(const std::string &what) : SecPolicy::Error(what) {} };
   
-  typedef std::vector< ptr_lib::shared_ptr<SecRuleIdentity> > RuleList;
+  typedef std::vector< ptr_lib::shared_ptr<SecRuleRelative> > RuleList;
   typedef std::vector< ptr_lib::shared_ptr<Regex> > RegexList;
   
   static const ptr_lib::shared_ptr<CertificateCache> DEFAULT_CERTIFICATE_CACHE_PTR;
@@ -89,7 +89,7 @@ public:
    * @param policy the signing policy
    */
   inline virtual void 
-  addSigningPolicyRule (ptr_lib::shared_ptr<SecRuleIdentity> rule);
+  addSigningPolicyRule (ptr_lib::shared_ptr<SecRuleRelative> rule);
   
   /**
    * @brief add a rule to infer the signing identity for a data packet
@@ -103,7 +103,7 @@ public:
    * @param policy the verification policy
    */
   inline virtual void
-  addVerificationPolicyRule (ptr_lib::shared_ptr<SecRuleIdentity> rule);
+  addVerificationPolicyRule (ptr_lib::shared_ptr<SecRuleRelative> rule);
   
   /**
    * @brief add a rule to exempt a data packet from verification 
@@ -144,7 +144,7 @@ protected:
 };
 
 void 
-SecPolicySimple::addSigningPolicyRule (ptr_lib::shared_ptr<SecRuleIdentity> rule)
+SecPolicySimple::addSigningPolicyRule (ptr_lib::shared_ptr<SecRuleRelative> rule)
 { rule->isPositive() ? m_signPolicies.push_back(rule) : m_mustFailSign.push_back(rule); }
 
 void
@@ -152,7 +152,7 @@ SecPolicySimple::addSigningInference (ptr_lib::shared_ptr<Regex> inference)
 { m_signInference.push_back(inference); }
 
 void 
-SecPolicySimple::addVerificationPolicyRule (ptr_lib::shared_ptr<SecRuleIdentity> rule)
+SecPolicySimple::addVerificationPolicyRule (ptr_lib::shared_ptr<SecRuleRelative> rule)
 { rule->isPositive() ? m_verifyPolicies.push_back(rule) : m_mustFailVerify.push_back(rule); }
       
 void 
